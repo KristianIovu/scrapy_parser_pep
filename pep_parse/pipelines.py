@@ -30,11 +30,7 @@ class PepParsePipeline:
                 results_dir = feed_path.parent
             else:
                 feed_path_str = str(feed_path)
-                if (
-                    'results' in feed_path_str and
-                    not feed_path_str.startswith('/')
-                ):
-                    # Относительный путь - используем текущую директорию
+                if 'results' in feed_path_str:
                     results_dir = Path.cwd() / 'results'
                 else:
                     results_dir = Path(feed_path_str).parent
