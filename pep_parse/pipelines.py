@@ -20,29 +20,30 @@ class PepParsePipeline:
 
     def close_spider(self, spider):
         """Сохранение файлов PEP и сводки по статусам."""
-        # Получает настройки FEEDS из паука
+        # Получаем настройки FEEDS из паука
         feeds = spider.crawler.settings.getdict('FEEDS') or {}
 
-        # Определяет директорию для сохранения
+        # Определяем директорию для сохранения
         if feeds:
             feed_path = list(feeds.keys())[0]
             if isinstance(feed_path, Path):
                 results_dir = feed_path.parent
             else:
                 feed_path_str = str(feed_path)
-                if 'results' in feed_path_str:
+                # Если путь относительный (начинается с results/)
+                if feed_path_str.startswith('results/'):
                     results_dir = Path.cwd() / 'results'
                 else:
                     results_dir = Path(feed_path_str).parent
         else:
             results_dir = Path.cwd() / 'results'
 
-        # Создаёт папку, если её нет
+        # Создаём папку, если её нет
         results_dir.mkdir(parents=True, exist_ok=True)
 
         current_dt = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')
 
-        # Сохраняет файл со списком PEP
+        # Сохраняем файл со списком PEP
         pep_filename = results_dir / f'pep_{current_dt}.csv'
         with open(pep_filename, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
@@ -50,7 +51,7 @@ class PepParsePipeline:
             for item in self.pep_items:
                 writer.writerow([item['number'], item['name'], item['status']])
 
-        # Сохраняет файл со сводкой по статусам
+        # Сохраняем файл со сводкой по статусам
         summary_filename = results_dir / f'status_summary_{current_dt}.csv'
         result = [('Статус', 'Количество')]
         result.extend(self.status_count.items())
