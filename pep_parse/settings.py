@@ -1,95 +1,59 @@
-# Scrapy settings for pep_parse project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import os
+from pathlib import Path
 
+DEBUG = True
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+LOGS_DIR = BASE_DIR / 'logs'
+os.makedirs(LOGS_DIR, exist_ok=True)
+os.makedirs(BASE_DIR / 'results', exist_ok=True)
+
+PEP_SPIDER_SETTINGS = {
+    'name': 'pep',
+    'allowed_domains': ['peps.python.org'],
+    'start_urls': ['https://peps.python.org/'],
+}
+
+BOT_NAME = "pep_parse"
+SPIDER_MODULES = ["pep_parse.spiders"]
+NEWSPIDER_MODULE = "pep_parse.spiders"
+TELNETCONSOLE_ENABLED = DEBUG
+
+if not DEBUG:
+    LOG_FILE = str(LOGS_DIR / 'scrapy.log')
+    LOG_LEVEL = 'WARNING'
+
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+ROBOTSTXT_OBEY = True
+COOKIES_ENABLED = True
+
+CONCURRENT_REQUESTS = 4
+DOWNLOAD_DELAY = 1
+RETRY_ENABLED = True
+RETRY_TIMES = 2
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429]
+DNS_TIMEOUT = 10
+DOWNLOAD_TIMEOUT = 30
+
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 0.5
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 2.0
+
+HTTPCACHE_ENABLED = DEBUG
+HTTPCACHE_EXPIRATION_SECS = 86400
+HTTPCACHE_DIR = "httpcache"
+
+FEED_EXPORT_ENCODING = 'utf-8'
 FEEDS = {
     'results/pep_%(time)s.csv': {
         'format': 'csv',
         'fields': ['number', 'name', 'status'],
-    }
+        'overwrite': True
+    },
 }
 
-
-BOT_NAME = "pep_parse"
-
-SPIDER_MODULES = ["pep_parse.spiders"]
-NEWSPIDER_MODULE = "pep_parse.spiders"
-
-ADDONS = {}
-
-
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "pep_parse (+http://www.yourdomain.com)"
-
-# Obey robots.txt rules
-ROBOTSTXT_OBEY = True
-
-# Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
-
-# Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
-
-# Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
-
-# Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-#}
-
-# Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    "pep_parse.middlewares.PepParseSpiderMiddleware": 543,
-#}
-
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "pep_parse.middlewares.PepParseDownloaderMiddleware": 543,
-#}
-
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-#}
-
-# Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "pep_parse.pipelines.PepParsePipeline": 300,
+    'pep_parse.pipelines.PepParsePipeline': 300,
 }
-
-# Enable and configure the AutoThrottle extension (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
-# The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
-# The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
-# The average number of requests Scrapy should be sending in parallel to
-# each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
-# Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG = False
-
-# Enable and configure HTTP caching (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-
-# Set settings whose default value is deprecated to a future-proof value
-FEED_EXPORT_ENCODING = "utf-8"
