@@ -1,4 +1,5 @@
 import csv
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -6,22 +7,22 @@ from .settings import BASE_DIR
 
 
 class PepParsePipeline:
-    """Pipeline сохранения статистики по документам PEP"""
+    """Pipeline сохранения статистики по документам PEP."""
 
     def open_spider(self, spider):
-        """Инициализация словаря и списка при запуске паука"""
+        """Инициализация словаря и списка при запуске паука."""
         self.status_count = {}
         self.pep_items = []
 
     def process_item(self, item, spider):
-        """Подсчет количества статусов и сохранение PEP"""
+        """Подсчет количества статусов и сохранение PEP."""
         status = item.get('status')
         self.status_count[status] = (self.status_count.get(status, 0) + 1)
         self.pep_items.append(item)
         return item
 
     def close_spider(self, spider):
-        """Запись значений в файлы"""
+        """Запись значений в файлы."""
         # Определяем директорию для сохранения
         feeds = spider.crawler.settings.getdict('FEEDS') or {}
 
