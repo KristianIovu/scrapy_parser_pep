@@ -45,7 +45,7 @@ HTTPCACHE_DIR = "httpcache"
 
 FEED_EXPORT_ENCODING = 'utf-8'
 FEEDS = {
-    'results/pep_%(time)s.csv': {
+    str('results/pep_%(time)s.csv'): {
         'format': 'csv',
         'fields': ['number', 'name', 'status'],
         'overwrite': True
