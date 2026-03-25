@@ -1,5 +1,4 @@
 import csv
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +13,27 @@ class PepParsePipeline:
         self.status_count = {}
         self.pep_items = []
 
+        # Очищаем папку результатов перед запуском
+        feeds = spider.crawler.settings.getdict('FEEDS') or {}
+        if feeds:
+            feed_path = list(feeds.keys())[0]
+            if isinstance(feed_path, Path):
+                results_dir = feed_path.parent
+            else:
+                feed_path_str = str(feed_path)
+                if 'tests' in feed_path_str and '_tmp' in feed_path_str:
+                    results_dir = Path(feed_path_str).parent
+                else:
+                    results_dir = BASE_DIR / 'results'
+        else:
+            results_dir = BASE_DIR / 'results'
+
+        # Очищаем папку от старых файлов
+        if results_dir.exists():
+            for file in results_dir.glob('*.csv'):
+                file.unlink()
+                spider.logger.info(f'Удалён старый файл: {file.name}')
+
     def process_item(self, item, spider):
         """Подсчет количества статусов и сохранение PEP."""
         status = item.get('status')
@@ -23,24 +43,21 @@ class PepParsePipeline:
 
     def close_spider(self, spider):
         """Запись значений в файлы."""
-        # Определяем директорию для сохранения
+        # Получаем настройки FEEDS из паука
         feeds = spider.crawler.settings.getdict('FEEDS') or {}
 
+        # Определяем директорию для сохранения
         if feeds:
             feed_path = list(feeds.keys())[0]
 
             if isinstance(feed_path, Path):
                 results_dir = feed_path.parent
-
             else:
                 feed_path_str = str(feed_path)
-                tmp_path = f'tests{os.path.sep}_tmp'
-
-                if tmp_path in feed_path_str:
+                if 'tests' in feed_path_str and '_tmp' in feed_path_str:
                     results_dir = Path(feed_path_str).parent
                 else:
                     results_dir = BASE_DIR / 'results'
-
         else:
             results_dir = BASE_DIR / 'results'
 
@@ -49,7 +66,7 @@ class PepParsePipeline:
 
         current_dt = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')
 
-        # 1. Сохраняем файл PEP (с префиксом pep_)
+        # 1. Сохраняем файл PEP
         pep_filename = results_dir / f'pep_{current_dt}.csv'
         with open(pep_filename, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
@@ -57,7 +74,7 @@ class PepParsePipeline:
             for item in self.pep_items:
                 writer.writerow([item['number'], item['name'], item['status']])
 
-        # 2. Сохраняем сводку (с префиксом status_summary_)
+        # 2. Сохраняем сводку
         summary_filename = results_dir / f'status_summary_{current_dt}.csv'
         result = [('Статус', 'Количество')]
         result.extend(self.status_count.items())
