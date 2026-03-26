@@ -1,85 +1,78 @@
 import csv
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-
-from .settings import BASE_DIR
 
 
 class PepParsePipeline:
-    """Pipeline сохранения статистики по документам PEP."""
+    """Сохранение статистики по статусам PEP."""
 
     def open_spider(self, spider):
-        """Инициализация словаря и списка при запуске паука."""
+        """Инициализация счётчика статусов и нормализация FEEDS."""
         self.status_count = {}
-        self.pep_items = []
 
-        # Очищаем папку результатов перед запуском
-        feeds = spider.crawler.settings.getdict('FEEDS') or {}
+        feeds = spider.settings.get('FEEDS')
+
         if feeds:
-            feed_path = list(feeds.keys())[0]
-            if isinstance(feed_path, Path):
-                results_dir = feed_path.parent
-            else:
-                feed_path_str = str(feed_path)
-                if 'tests' in feed_path_str and '_tmp' in feed_path_str:
-                    results_dir = Path(feed_path_str).parent
-                else:
-                    results_dir = BASE_DIR / 'results'
-        else:
-            results_dir = BASE_DIR / 'results'
+            normalized_feeds = {}
 
-        # Очищаем папку от старых файлов
-        if results_dir.exists():
-            for file in results_dir.glob('*.csv'):
-                file.unlink()
-                spider.logger.info(f'Удалён старый файл: {file.name}')
+            for uri, opts in feeds.items():
+                # Преобразование Path в строку, если необходимо
+                normalized_feeds[str(uri)] = opts
+
+            spider.settings.set('FEEDS', normalized_feeds)
 
     def process_item(self, item, spider):
-        """Подсчет количества статусов и сохранение PEP."""
+        """Подсчёт количества PEP по статусам."""
         status = item.get('status')
-        self.status_count[status] = (self.status_count.get(status, 0) + 1)
-        self.pep_items.append(item)
+        self.status_count[status] = self.status_count.get(status, 0) + 1
         return item
 
     def close_spider(self, spider):
-        """Запись значений в файлы."""
-        # Получаем настройки FEEDS из паука
-        feeds = spider.crawler.settings.getdict('FEEDS') or {}
+        """Создание итоговых CSV-файлов со статистикой."""
+        feeds = spider.settings.get('FEEDS')
 
-        # Определяем директорию для сохранения
+        # Определение директории и шаблона имени файла
         if feeds:
-            feed_path = list(feeds.keys())[0]
+            feed_uri = list(feeds.keys())[0]
 
-            if isinstance(feed_path, Path):
-                results_dir = feed_path.parent
+            if isinstance(feed_uri, Path):
+                results_dir = feed_uri.parent
+                pep_filename_template = feed_uri.name
             else:
-                feed_path_str = str(feed_path)
-                if 'tests' in feed_path_str and '_tmp' in feed_path_str:
-                    results_dir = Path(feed_path_str).parent
-                else:
-                    results_dir = BASE_DIR / 'results'
+                feed_path = Path(feed_uri)
+                results_dir = feed_path.parent
+                pep_filename_template = feed_path.name
         else:
-            results_dir = BASE_DIR / 'results'
+            results_dir = Path('results')
+            pep_filename_template = 'pep_%(time)s.csv'
 
-        # Создаём папку
+        # Создание директории для результатов
         results_dir.mkdir(parents=True, exist_ok=True)
 
-        current_dt = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')
+        # Генерация временной метки для имени файла
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
-        # 1. Сохраняем файл PEP
-        pep_filename = results_dir / f'pep_{current_dt}.csv'
-        with open(pep_filename, 'w', newline='', encoding='utf-8') as f:
+        # Создание файла pep_*.csv, если Scrapy не создал его автоматически
+        pep_filename = pep_filename_template.replace('%(time)s', timestamp)
+        pep_file = results_dir / pep_filename
+
+        if not pep_file.exists():
+            with open(pep_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['number', 'name', 'status'])
+
+        # Создание файла status_summary_*.csv со статистикой по статусам
+        summary_file = results_dir / f'status_summary_{timestamp}.csv'
+
+        # Сортировка статусов для упорядоченного вывода
+        sorted_statuses = sorted(self.status_count.items())
+        total = sum(self.status_count.values())
+
+        with open(summary_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(['number', 'name', 'status'])
-            for item in self.pep_items:
-                writer.writerow([item['number'], item['name'], item['status']])
+            writer.writerow(['Статус', 'Количество'])
 
-        # 2. Сохраняем сводку
-        summary_filename = results_dir / f'status_summary_{current_dt}.csv'
-        result = [('Статус', 'Количество')]
-        result.extend(self.status_count.items())
-        result.append(('Total', sum(self.status_count.values())))
+            for status, count in sorted_statuses:
+                writer.writerow([status, count])
 
-        with open(summary_filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerows(result)
+            writer.writerow(['Total', total])
