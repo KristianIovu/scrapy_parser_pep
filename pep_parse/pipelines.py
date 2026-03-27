@@ -37,20 +37,19 @@ class PepParsePipeline:
         # Временная метка для файлов
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
-        pep_filename = self.pep_filename_template.replace(
+        # pep_*.csv
+        pep_file = self.results_dir / self.pep_filename_template.replace(
             '%(time)s', timestamp
         )
-        pep_file = self.results_dir / pep_filename
-
         if not pep_file.exists():
             with open(pep_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['number', 'name', 'status'])
 
+        # status_summary_*.csv
         summary_file = self.results_dir / f'status_summary_{timestamp}.csv'
-        sorted_statuses = sorted(self.status_count.items())
         total = sum(self.status_count.values())
-
+        sorted_statuses = sorted(self.status_count.items())
         with open(summary_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['Статус', 'Количество'])
