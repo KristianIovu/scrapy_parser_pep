@@ -37,7 +37,7 @@ class PepParsePipeline:
         # Временная метка для файлов
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
-        # pep_*.csv
+        # Создаем pep_*.csv если Scrapy не создал
         pep_file = self.results_dir / self.pep_filename_template.replace(
             '%(time)s', timestamp
         )
@@ -46,10 +46,12 @@ class PepParsePipeline:
                 writer = csv.writer(f)
                 writer.writerow(['number', 'name', 'status'])
 
-        # status_summary_*.csv
+        # Создаем status_summary_*.csv
         summary_file = self.results_dir / f'status_summary_{timestamp}.csv'
-        total = sum(self.status_count.values())
+
         sorted_statuses = sorted(self.status_count.items())
+        total = sum(self.status_count.values())
+
         with open(summary_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['Статус', 'Количество'])
