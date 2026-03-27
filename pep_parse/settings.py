@@ -33,7 +33,7 @@ FEEDS = {
         'format': 'csv',
         'fields': ['number', 'name', 'status'],
         'overwrite': True,
-    }
+    },
 }
 
 ITEM_PIPELINES = {
