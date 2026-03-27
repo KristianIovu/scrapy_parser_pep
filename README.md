@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # scrapy_parser_pep
 
 Асинхронный парсер документов Python Enhancement Proposals (PEP) на базе фреймворка Scrapy.
@@ -27,6 +26,3 @@ cd scrapy_parser_pep
 3. Установить зависимости
 
 4. Запустить парсер
-=======
-# scrapy_parser_pep
->>>>>>> 024f9c6bbcf248dc28158aedffc504210134c613
