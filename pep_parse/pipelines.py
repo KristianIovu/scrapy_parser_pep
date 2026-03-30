@@ -53,9 +53,12 @@ class PepParsePipeline:
         pep_filename = pep_template.replace('%(time)s', timestamp)
         pep_file = results_dir / pep_filename
 
-        with open(pep_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['number', 'name', 'status'])
+        existing_pep_files = list(results_dir.glob('pep_*.csv'))
+
+        if not existing_pep_files:
+            with open(pep_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['number', 'name', 'status'])
 
         summary_file = results_dir / f'status_summary_{timestamp}.csv'
 
