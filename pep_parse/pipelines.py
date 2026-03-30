@@ -37,20 +37,30 @@ class PepParsePipeline:
         # Временная метка для файлов
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
-        # Создаем pep_*.csv если Scrapy не создал
-        pep_file = self.results_dir / self.pep_filename_template.replace(
-            '%(time)s', timestamp
-        )
-        if not pep_file.exists():
-            with open(pep_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['number', 'name', 'status'])
+        # Получаем путь из FEEDS
+        feeds = spider.settings.get('FEEDS')
 
-        # Создаем status_summary_*.csv
-        summary_file = self.results_dir / f'status_summary_{timestamp}.csv'
+        if feeds:
+            feed_uri = list(feeds.keys())[0]
+            results_dir = Path(feed_uri).parent
+            pep_template = Path(feed_uri).name
+        else:
+            results_dir = Path('results')
+            pep_template = 'pep_%(time)s.csv'
 
-        sorted_statuses = sorted(self.status_count.items())
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        pep_filename = pep_template.replace('%(time)s', timestamp)
+        pep_file = results_dir / pep_filename
+
+        with open(pep_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['number', 'name', 'status'])
+
+        summary_file = results_dir / f'status_summary_{timestamp}.csv'
+
         total = sum(self.status_count.values())
+        sorted_statuses = sorted(self.status_count.items())
 
         with open(summary_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
