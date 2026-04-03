@@ -17,12 +17,21 @@
 ## Установка и запуск
 
 1. Клонировать репозиторий:
-```bash
 git clone https://github.com/KristianIovu/scrapy_parser_pep.git
 cd scrapy_parser_pep
 
 2. Создать и активировать виртуальное окружение
+python -m venv venv
+source venv/Scripts/activate
 
 3. Установить зависимости
+pip install -r requirements.txt
 
 4. Запустить парсер
+cd src
+scrapy crawl pep
+
+## Результат
+В папке result появятся два файла:
+1. pep_20241215_120000.csv
+2. status_summary_20241215_120000.csv
